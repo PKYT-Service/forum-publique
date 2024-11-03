@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Récupérer le Code GitHub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module">
+        import { GITHUB_TOKEN } from 'https://pkyt-database-up.vercel.app/code-source/admin-dashboard/secute_private/tocken.js';
+
+        async function fetchGitHubCode() {
+            // Récupérer le fragment d'URL après le #
+            const hash = window.location.hash.substring(1);
+            const url = `https://api.github.com/repos/PKYT-Service/database_dev/contents/${hash}`;
+
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `token ${GITHUB_TOKEN}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Erreur lors de la récupération du code');
+                }
+
+                const data = await response.json();
+                const code = atob(data.content); // Décoder le contenu Base64
+
+                // Injecter le code HTML dans la page
+                document.getElementById('codeDisplay').innerHTML = code;
+
+                // Extraire et ajouter dynamiquement les scripts et styles
+                addDynamicScriptsAndStyles(code);
+            } catch (error) {
+                document.getElementById('codeDisplay').innerHTML = `<div class="error">Nous ne trouvons pas cette page.</div>`;
+            }
+        }
+
+        function addDynamicScriptsAndStyles(code) {
+            // Créer un élément de style
+            const styleMatch = code.match(/<style>([\s\S]*?)<\/style>/);
+            if (styleMatch) {
+                const styleElement = document.createElement('style');
+                styleElement.textContent = styleMatch[1]; // Extraire le contenu du style
+                document.head.appendChild(styleElement);
+            }
+
+            // Créer un élément script
+            const scriptMatch = code.match(/<script>([\s\S]*?)<\/script>/);
+            if (scriptMatch) {
+                const scriptElement = document.createElement('script');
+                scriptElement.textContent = scriptMatch[1]; // Extraire le contenu du script
+                document.body.appendChild(scriptElement);
+            }
+        }
+
+        window.onload = fetchGitHubCode;
+    </script>
+</head>
+<body>
+    <div id="codeDisplay"></div>
+</body>
+</html>
