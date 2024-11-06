@@ -57,7 +57,7 @@ async function fetchUserPermissions() {
     const account = localStorage.getItem('account'); // Récupère l'account depuis le localStorage
     if (!account) {
         console.error("Account not found in localStorage.");
-        return; // Si l'account n'est pas trouvé, on arrête la fonction
+        return []; // Retourne un tableau vide si aucun account n'est trouvé
     }
 
     try {
@@ -74,6 +74,7 @@ async function fetchUserPermissions() {
         }
     } catch (error) {
         console.error("Error fetching user permissions:", error);
+        return []; // Retourne un tableau vide en cas d'erreur
     }
 }
 
@@ -95,17 +96,51 @@ async function fetchFolders() {
             return dossierPermissions.some(permission => permissions.includes(permission));
         });
 
-        // Afficher les dossiers accessibles
-        console.log("Accessible Folders:", accessibleFolders);
-        // Vous pouvez ici ajouter du code pour afficher les dossiers dans l'interface utilisateur
+        // Afficher les dossiers accessibles dans le <select> de la popup
+        const folderSelect = document.getElementById('folderSelect');
+        folderSelect.innerHTML = ''; // Réinitialise le contenu
+        accessibleFolders.forEach(folder => {
+            const option = document.createElement('option');
+            option.value = folder.name; // Ou l'attribut que vous voulez utiliser
+            option.textContent = folder.name;
+            folderSelect.appendChild(option);
+        });
+
+        if (accessibleFolders.length === 0) {
+            console.log("No accessible folders.");
+        }
     } catch (error) {
         console.error("Error fetching folders:", error);
     }
 }
 
+function showSavePopup() {
+    document.getElementById('savePopup').classList.remove('hidden');
+}
+
+function closeSavePopup() {
+    document.getElementById('savePopup').classList.add('hidden');
+}
+
+function saveContent() {
+    const folder = document.getElementById('folderSelect').value;
+    const fileName = document.getElementById('fileName').value;
+    if (!folder || !fileName) {
+        alert("Veuillez sélectionner un dossier et entrer un nom de fichier.");
+        return;
+    }
+
+    const content = document.getElementById('editor').innerHTML;
+
+    // Enregistrez le contenu dans un fichier ici
+    console.log("Saving content:", content, "in folder:", folder, "with file name:", fileName);
+
+    // Fermer la popup après enregistrement
+    closeSavePopup();
+}
+
 // Appelez la fonction fetchFolders pour récupérer et afficher les dossiers
 fetchFolders();
-
     </script>
 </body>
 </html>
