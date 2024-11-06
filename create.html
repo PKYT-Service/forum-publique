@@ -53,88 +53,59 @@
     </div>
 
     <script>
-        // Charger les permissions de l'utilisateur
-        async function fetchUserPermissions() {
-            const account = localStorage.getItem('account');
-            const response = await fetch(`https://pkyt-database-up.vercel.app/account/v3/${account}.json`);
-            const userData = await response.json();
-            return userData.infoCompte.grade.split(", ");
+async function fetchUserPermissions() {
+    const account = localStorage.getItem('account'); // Récupère l'account depuis le localStorage
+    if (!account) {
+        console.error("Account not found in localStorage.");
+        return; // Si l'account n'est pas trouvé, on arrête la fonction
+    }
+
+    try {
+        const response = await fetch(`https://pkyt-database-up.vercel.app/account/v3/${account}.json`);
+        const userData = await response.json();
+        const grade = userData.jeuxRP ? userData.jeuxRP.grade : null;
+
+        // Vérifie si 'grade' est défini et n'est pas une chaîne vide
+        if (grade && typeof grade === 'string') {
+            return grade.split(','); // Divise les permissions en un tableau
+        } else {
+            console.error("Grade is not properly defined.");
+            return []; // Si grade n'est pas valide, retourne un tableau vide
+        }
+    } catch (error) {
+        console.error("Error fetching user permissions:", error);
+    }
+}
+
+async function fetchFolders() {
+    try {
+        const permissions = await fetchUserPermissions();
+        if (!permissions.length) {
+            console.error("No permissions found.");
+            return;
         }
 
-        // Charger les dossiers disponibles et filtrer selon les permissions
-        async function fetchFolders() {
-            const userPermissions = await fetchUserPermissions();
-            const response = await fetch('https://pkyt-database-up.vercel.app/code-source/API/forum_perms/pkyt.json');
-            const foldersData = await response.json();
-            const folderSelect = document.getElementById('folderSelect');
-            
-            folderSelect.innerHTML = ''; // Vider la liste
+        // Si des permissions sont présentes, récupérez les dossiers
+        const response = await fetch("https://pkyt-database-up.vercel.app/code-source/API/forum_perms/pkyt.json");
+        const folders = await response.json();
 
-            foldersData.Dossier.forEach(folder => {
-                if (userPermissions.includes(folder.permissions)) {
-                    const option = document.createElement('option');
-                    option.value = folder.name;
-                    option.textContent = folder.name;
-                    folderSelect.appendChild(option);
-                }
-            });
-        }
+        const accessibleFolders = folders.Dossier.filter(dossier => {
+            const dossierPermissions = dossier.permissions ? dossier.permissions.split(',') : [];
+            // Filtre les dossiers en fonction des permissions
+            return dossierPermissions.some(permission => permissions.includes(permission));
+        });
 
-        // Montrer la popup d'enregistrement
-        function showSavePopup() {
-            fetchFolders(); // Charger les dossiers disponibles
-            document.getElementById('savePopup').classList.remove('hidden');
-        }
+        // Afficher les dossiers accessibles
+        console.log("Accessible Folders:", accessibleFolders);
+        // Vous pouvez ici ajouter du code pour afficher les dossiers dans l'interface utilisateur
+    } catch (error) {
+        console.error("Error fetching folders:", error);
+    }
+}
 
-        // Fermer la popup d'enregistrement
-        function closeSavePopup() {
-            document.getElementById('savePopup').classList.add('hidden');
-        }
+// Appelez la fonction fetchFolders pour récupérer et afficher les dossiers
+fetchFolders();
 
-        // Formatage de texte
-        function formatText(command, value = null) {
-            document.execCommand(command, false, value);
-        }
-
-        // Sauvegarder le contenu
-        async function saveContent() {
-            const editorContent = document.getElementById('editor').innerHTML;
-            const folder = document.getElementById('folderSelect').value;
-            const fileName = document.getElementById('fileName').value;
-
-            if (!fileName) {
-                alert('Veuillez entrer un nom de fichier');
-                return;
-            }
-
-            // Récupérer le token depuis tocken.js
-            const tokenResponse = await fetch('https://pkyt-database-up.vercel.app/code-source/admin-dashboard/secute_private/tocken.js');
-            const tokenData = await tokenResponse.text();
-            const token = tokenData.match(/ghp_\w+/)[0]; // Extraire le token
-
-            // Sauvegarde via l'API GitHub
-            const url = `https://api.github.com/repos/PKYT-Service/database_dev/contents/${folder}/${fileName}.html`;
-            const base64Content = btoa(editorContent); // Encoder le contenu en Base64
-
-            const response = await fetch(url, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    message: 'Ajout d\'un fichier depuis l\'éditeur de texte',
-                    content: base64Content
-                })
-            });
-
-            if (response.ok) {
-                alert('Fichier enregistré avec succès');
-                closeSavePopup();
-            } else {
-                alert('Erreur lors de l\'enregistrement du fichier');
-            }
-        }
     </script>
 </body>
 </html>
