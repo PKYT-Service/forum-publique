@@ -56,103 +56,105 @@
     <script type="module">
         import { GITHUB_TOKEN } from 'https://pkyt-database-up.vercel.app/code-source/admin-dashboard/secute_private/tocken.js';
 
-        async function fetchUserPermissions() {
-            const account = localStorage.getItem('account');
-            if (!account) {
-                console.error("Account not found in localStorage.");
-                return;
-            }
-
-            try {
-                const response = await fetch(`https://pkyt-database-up.vercel.app/account/v3/${account}.json`);
-                const userData = await response.json();
-                const grade = userData.jeuxRP ? userData.jeuxRP.grade : null;
-
-                if (grade && typeof grade === 'string') {
-                    return grade.split(',');
-                } else {
-                    console.error("Grade is not properly defined.");
-                    return [];
-                }
-            } catch (error) {
-                console.error("Error fetching user permissions:", error);
-            }
-        }
-
-        async function fetchFolders() {
-            try {
-                const permissions = await fetchUserPermissions();
-                if (!permissions || !permissions.length) {
-                    console.error("No permissions found.");
+        document.addEventListener("DOMContentLoaded", () => {
+            async function fetchUserPermissions() {
+                const account = localStorage.getItem('account');
+                if (!account) {
+                    console.error("Account not found in localStorage.");
                     return;
                 }
 
-                const response = await fetch("https://pkyt-database-up.vercel.app/code-source/API/forum_perms/pkyt.json");
-                const folders = await response.json();
+                try {
+                    const response = await fetch(`https://pkyt-database-up.vercel.app/account/v3/${account}.json`);
+                    const userData = await response.json();
+                    const grade = userData.jeuxRP ? userData.jeuxRP.grade : null;
 
-                const accessibleFolders = folders.Dossier.filter(dossier => {
-                    const dossierPermissions = dossier.permissions ? dossier.permissions.split(',') : [];
-                    return dossierPermissions.some(permission => permissions.includes(permission));
-                });
-
-                const folderSelect = document.getElementById("folderSelect");
-                accessibleFolders.forEach(folder => {
-                    const option = document.createElement("option");
-                    option.value = folder.nom;
-                    option.textContent = folder.nom;
-                    folderSelect.appendChild(option);
-                });
-            } catch (error) {
-                console.error("Error fetching folders:", error);
-            }
-        }
-
-        function formatText(command) {
-            document.execCommand(command, false, null);
-        }
-
-        function showSavePopup() {
-            document.getElementById("savePopup").classList.remove("hidden");
-        }
-
-        function closeSavePopup() {
-            document.getElementById("savePopup").classList.add("hidden");
-        }
-
-        async function saveContent() {
-            const folder = document.getElementById("folderSelect").value;
-            const fileName = document.getElementById("fileName").value;
-            const content = document.getElementById("editor").innerHTML;
-            const filePath = `${folder}/${fileName}.html`;
-
-            try {
-                const response = await fetch(`https://api.github.com/repos/PKYT-Service/pkyt-discord/contents/${filePath}`, {
-                    method: "PUT",
-                    headers: {
-                        "Authorization": `Bearer ${GITHUB_TOKEN}`,
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        message: `Ajout du fichier ${fileName}.html`,
-                        content: btoa(unescape(encodeURIComponent(content)))
-                    })
-                });
-
-                if (response.ok) {
-                    alert("Fichier enregistré avec succès !");
-                    closeSavePopup();
-                } else {
-                    const errorData = await response.json();
-                    console.error("Erreur:", errorData.message);
-                    alert("Erreur lors de l'enregistrement du fichier.");
+                    if (grade && typeof grade === 'string') {
+                        return grade.split(',');
+                    } else {
+                        console.error("Grade is not properly defined.");
+                        return [];
+                    }
+                } catch (error) {
+                    console.error("Error fetching user permissions:", error);
                 }
-            } catch (error) {
-                console.error("Erreur lors de la sauvegarde:", error);
-                alert("Erreur lors de la sauvegarde du fichier.");
             }
-        }
 
-        fetchFolders();
+            async function fetchFolders() {
+                try {
+                    const permissions = await fetchUserPermissions();
+                    if (!permissions || !permissions.length) {
+                        console.error("No permissions found.");
+                        return;
+                    }
+
+                    const response = await fetch("https://pkyt-database-up.vercel.app/code-source/API/forum_perms/pkyt.json");
+                    const folders = await response.json();
+
+                    const accessibleFolders = folders.Dossier.filter(dossier => {
+                        const dossierPermissions = dossier.permissions ? dossier.permissions.split(',') : [];
+                        return dossierPermissions.some(permission => permissions.includes(permission));
+                    });
+
+                    const folderSelect = document.getElementById("folderSelect");
+                    accessibleFolders.forEach(folder => {
+                        const option = document.createElement("option");
+                        option.value = folder.nom;
+                        option.textContent = folder.nom;
+                        folderSelect.appendChild(option);
+                    });
+                } catch (error) {
+                    console.error("Error fetching folders:", error);
+                }
+            }
+
+            function formatText(command) {
+                document.execCommand(command, false, null);
+            }
+
+            function showSavePopup() {
+                document.getElementById("savePopup").classList.remove("hidden");
+            }
+
+            function closeSavePopup() {
+                document.getElementById("savePopup").classList.add("hidden");
+            }
+
+            async function saveContent() {
+                const folder = document.getElementById("folderSelect").value;
+                const fileName = document.getElementById("fileName").value;
+                const content = document.getElementById("editor").innerHTML;
+                const filePath = `${folder}/${fileName}.html`;
+
+                try {
+                    const response = await fetch(`https://api.github.com/repos/PKYT-Service/pkyt-discord/contents/${filePath}`, {
+                        method: "PUT",
+                        headers: {
+                            "Authorization": `Bearer ${GITHUB_TOKEN}`,
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            message: `Ajout du fichier ${fileName}.html`,
+                            content: btoa(unescape(encodeURIComponent(content)))
+                        })
+                    });
+
+                    if (response.ok) {
+                        alert("Fichier enregistré avec succès !");
+                        closeSavePopup();
+                    } else {
+                        const errorData = await response.json();
+                        console.error("Erreur:", errorData.message);
+                        alert("Erreur lors de l'enregistrement du fichier.");
+                    }
+                } catch (error) {
+                    console.error("Erreur lors de la sauvegarde:", error);
+                    alert("Erreur lors de la sauvegarde du fichier.");
+                }
+            }
+
+            fetchFolders();
+        });
     </script>
 </body>
 </html>
