@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <script type="module" src="https://pkyt-database-up.vercel.app/code-source/admin-dashboard/secute_private/tocken.js"></script>
     <style>
         body {
             font-family: 'Roboto', sans-serif;
@@ -17,14 +18,26 @@
     <div class="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-lg">
         <h1 class="text-3xl font-bold mb-6 text-center">Éditeur de Texte Avancé</h1>
         
+        <!-- Zone de boutons de formatage -->
         <div class="mb-4 flex flex-wrap justify-center">
-            <!-- Boutons de formatage -->
+            <button class="px-4 py-2 bg-blue-500 text-white rounded mr-2 mb-2" onclick="formatText('bold')"><i class="fas fa-bold"></i> Gras</button>
+            <button class="px-4 py-2 bg-blue-500 text-white rounded mr-2 mb-2" onclick="formatText('italic')"><i class="fas fa-italic"></i> Italique</button>
+            <button class="px-4 py-2 bg-blue-500 text-white rounded mr-2 mb-2" onclick="formatText('underline')"><i class="fas fa-underline"></i> Souligné</button>
+            <button class="px-4 py-2 bg-blue-500 text-white rounded mr-2 mb-2" onclick="formatText('strikeThrough')"><i class="fas fa-strikethrough"></i> Barré</button>
+            <button class="px-4 py-2 bg-blue-500 text-white rounded mr-2 mb-2" onclick="formatText('insertUnorderedList')"><i class="fas fa-list-ul"></i> Liste</button>
+            <button class="px-4 py-2 bg-blue-500 text-white rounded mr-2 mb-2" onclick="formatText('insertOrderedList')"><i class="fas fa-list-ol"></i> Liste numérotée</button>
+            <button class="px-4 py-2 bg-blue-500 text-white rounded mr-2 mb-2" onclick="formatText('justifyLeft')"><i class="fas fa-align-left"></i> Alignement gauche</button>
+            <button class="px-4 py-2 bg-blue-500 text-white rounded mr-2 mb-2" onclick="formatText('justifyCenter')"><i class="fas fa-align-center"></i> Centrer</button>
+            <button class="px-4 py-2 bg-blue-500 text-white rounded mr-2 mb-2" onclick="formatText('justifyRight')"><i class="fas fa-align-right"></i> Alignement droite</button>
         </div>
         
+        <!-- Zone d'édition de texte -->
         <div contenteditable="true" id="editor" class="border p-4 rounded h-64 mb-4 bg-gray-50"></div>
         
+        <!-- Bouton d'enregistrement -->
         <button class="px-4 py-2 bg-green-500 text-white rounded" onclick="showSavePopup()">Enregistrer</button>
         
+        <!-- Div pour afficher les dossiers et saisir le nom du fichier -->
         <div id="savePopup" class="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center hidden">
             <div class="bg-white p-4 rounded-lg shadow-lg w-96">
                 <h2 class="text-xl font-bold mb-4">Enregistrer dans un dossier</h2>
@@ -40,92 +53,106 @@
         <div id="output" class="mt-4 p-4 bg-gray-200 rounded"></div>
     </div>
 
-    <script>
-async function fetchUserPermissions() {
-    const account = localStorage.getItem('account');
-    if (!account) {
-        console.error("Account not found in localStorage.");
-        return [];
-    }
+    <script type="module">
+        import { GITHUB_TOKEN } from 'https://pkyt-database-up.vercel.app/code-source/admin-dashboard/secute_private/tocken.js';
 
-    try {
-        const response = await fetch(`https://pkyt-database-up.vercel.app/account/v3/${account}.json`);
-        const userData = await response.json();
-        const grade = userData.jeuxRP ? userData.jeuxRP.grade : null;
+        async function fetchUserPermissions() {
+            const account = localStorage.getItem('account');
+            if (!account) {
+                console.error("Account not found in localStorage.");
+                return;
+            }
 
-        if (grade && typeof grade === 'string') {
-            const permissions = grade.split(',');
-            console.log("User permissions:", permissions);
-            return permissions;
-        } else {
-            console.error("Grade is not properly defined.");
-            return [];
-        }
-    } catch (error) {
-        console.error("Error fetching user permissions:", error);
-        return [];
-    }
-}
+            try {
+                const response = await fetch(`https://pkyt-database-up.vercel.app/account/v3/${account}.json`);
+                const userData = await response.json();
+                const grade = userData.jeuxRP ? userData.jeuxRP.grade : null;
 
-async function fetchFolders() {
-    try {
-        const permissions = await fetchUserPermissions();
-        if (!permissions.length) {
-            console.log("No permissions found.");
-            return;
+                if (grade && typeof grade === 'string') {
+                    return grade.split(',');
+                } else {
+                    console.error("Grade is not properly defined.");
+                    return [];
+                }
+            } catch (error) {
+                console.error("Error fetching user permissions:", error);
+            }
         }
 
-        const response = await fetch("https://pkyt-database-up.vercel.app/code-source/API/forum_perms/pkyt.json");
-        const folders = await response.json();
-        console.log("Fetched folders:", folders);
+        async function fetchFolders() {
+            try {
+                const permissions = await fetchUserPermissions();
+                if (!permissions || !permissions.length) {
+                    console.error("No permissions found.");
+                    return;
+                }
 
-        const accessibleFolders = folders.Dossier.filter(dossier => {
-            const dossierPermissions = dossier.permissions ? dossier.permissions.split(',') : [];
-            return dossierPermissions.some(permission => permissions.includes(permission));
-        });
+                const response = await fetch("https://pkyt-database-up.vercel.app/code-source/API/forum_perms/pkyt.json");
+                const folders = await response.json();
 
-        const folderSelect = document.getElementById('folderSelect');
-        folderSelect.innerHTML = '';
+                const accessibleFolders = folders.Dossier.filter(dossier => {
+                    const dossierPermissions = dossier.permissions ? dossier.permissions.split(',') : [];
+                    return dossierPermissions.some(permission => permissions.includes(permission));
+                });
 
-        if (accessibleFolders.length > 0) {
-            accessibleFolders.forEach(folder => {
-                const option = document.createElement('option');
-                option.value = folder.name;
-                option.textContent = folder.name;
-                folderSelect.appendChild(option);
-            });
-            console.log("Accessible folders:", accessibleFolders);
-        } else {
-            console.log("No accessible folders found for the user's permissions.");
+                const folderSelect = document.getElementById("folderSelect");
+                accessibleFolders.forEach(folder => {
+                    const option = document.createElement("option");
+                    option.value = folder.nom;
+                    option.textContent = folder.nom;
+                    folderSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error("Error fetching folders:", error);
+            }
         }
-    } catch (error) {
-        console.error("Error fetching folders:", error);
-    }
-}
 
-function showSavePopup() {
-    document.getElementById('savePopup').classList.remove('hidden');
-}
+        function formatText(command) {
+            document.execCommand(command, false, null);
+        }
 
-function closeSavePopup() {
-    document.getElementById('savePopup').classList.add('hidden');
-}
+        function showSavePopup() {
+            document.getElementById("savePopup").classList.remove("hidden");
+        }
 
-function saveContent() {
-    const folder = document.getElementById('folderSelect').value;
-    const fileName = document.getElementById('fileName').value;
-    if (!folder || !fileName) {
-        alert("Veuillez sélectionner un dossier et entrer un nom de fichier.");
-        return;
-    }
+        function closeSavePopup() {
+            document.getElementById("savePopup").classList.add("hidden");
+        }
 
-    const content = document.getElementById('editor').innerHTML;
-    console.log("Saving content:", content, "in folder:", folder, "with file name:", fileName);
+        async function saveContent() {
+            const folder = document.getElementById("folderSelect").value;
+            const fileName = document.getElementById("fileName").value;
+            const content = document.getElementById("editor").innerHTML;
+            const filePath = `${folder}/${fileName}.html`;
 
-    closeSavePopup();
-}
+            try {
+                const response = await fetch(`https://api.github.com/repos/PKYT-Service/pkyt-discord/contents/${filePath}`, {
+                    method: "PUT",
+                    headers: {
+                        "Authorization": `Bearer ${GITHUB_TOKEN}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        message: `Ajout du fichier ${fileName}.html`,
+                        content: btoa(unescape(encodeURIComponent(content)))
+                    })
+                });
 
-fetchFolders();
+                if (response.ok) {
+                    alert("Fichier enregistré avec succès !");
+                    closeSavePopup();
+                } else {
+                    const errorData = await response.json();
+                    console.error("Erreur:", errorData.message);
+                    alert("Erreur lors de l'enregistrement du fichier.");
+                }
+            } catch (error) {
+                console.error("Erreur lors de la sauvegarde:", error);
+                alert("Erreur lors de la sauvegarde du fichier.");
+            }
+        }
+
+        fetchFolders();
     </script>
 </body>
 </html>
