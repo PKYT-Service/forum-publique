@@ -17,26 +17,14 @@
     <div class="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-lg">
         <h1 class="text-3xl font-bold mb-6 text-center">Éditeur de Texte Avancé</h1>
         
-        <!-- Zone de boutons de formatage -->
         <div class="mb-4 flex flex-wrap justify-center">
-            <button class="px-4 py-2 bg-blue-500 text-white rounded mr-2 mb-2" onclick="formatText('bold')"><i class="fas fa-bold"></i> Gras</button>
-            <button class="px-4 py-2 bg-blue-500 text-white rounded mr-2 mb-2" onclick="formatText('italic')"><i class="fas fa-italic"></i> Italique</button>
-            <button class="px-4 py-2 bg-blue-500 text-white rounded mr-2 mb-2" onclick="formatText('underline')"><i class="fas fa-underline"></i> Souligné</button>
-            <button class="px-4 py-2 bg-blue-500 text-white rounded mr-2 mb-2" onclick="formatText('strikeThrough')"><i class="fas fa-strikethrough"></i> Barré</button>
-            <button class="px-4 py-2 bg-blue-500 text-white rounded mr-2 mb-2" onclick="formatText('insertUnorderedList')"><i class="fas fa-list-ul"></i> Liste</button>
-            <button class="px-4 py-2 bg-blue-500 text-white rounded mr-2 mb-2" onclick="formatText('insertOrderedList')"><i class="fas fa-list-ol"></i> Liste numérotée</button>
-            <button class="px-4 py-2 bg-blue-500 text-white rounded mr-2 mb-2" onclick="formatText('justifyLeft')"><i class="fas fa-align-left"></i> Alignement gauche</button>
-            <button class="px-4 py-2 bg-blue-500 text-white rounded mr-2 mb-2" onclick="formatText('justifyCenter')"><i class="fas fa-align-center"></i> Centrer</button>
-            <button class="px-4 py-2 bg-blue-500 text-white rounded mr-2 mb-2" onclick="formatText('justifyRight')"><i class="fas fa-align-right"></i> Alignement droite</button>
+            <!-- Boutons de formatage -->
         </div>
         
-        <!-- Zone d'édition de texte -->
         <div contenteditable="true" id="editor" class="border p-4 rounded h-64 mb-4 bg-gray-50"></div>
         
-        <!-- Bouton d'enregistrement -->
         <button class="px-4 py-2 bg-green-500 text-white rounded" onclick="showSavePopup()">Enregistrer</button>
         
-        <!-- Div pour afficher les dossiers et saisir le nom du fichier -->
         <div id="savePopup" class="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center hidden">
             <div class="bg-white p-4 rounded-lg shadow-lg w-96">
                 <h2 class="text-xl font-bold mb-4">Enregistrer dans un dossier</h2>
@@ -54,10 +42,10 @@
 
     <script>
 async function fetchUserPermissions() {
-    const account = localStorage.getItem('account'); // Récupère l'account depuis le localStorage
+    const account = localStorage.getItem('account');
     if (!account) {
         console.error("Account not found in localStorage.");
-        return []; // Retourne un tableau vide si aucun account n'est trouvé
+        return [];
     }
 
     try {
@@ -65,16 +53,17 @@ async function fetchUserPermissions() {
         const userData = await response.json();
         const grade = userData.jeuxRP ? userData.jeuxRP.grade : null;
 
-        // Vérifie si 'grade' est défini et n'est pas une chaîne vide
         if (grade && typeof grade === 'string') {
-            return grade.split(','); // Divise les permissions en un tableau
+            const permissions = grade.split(',');
+            console.log("User permissions:", permissions);
+            return permissions;
         } else {
             console.error("Grade is not properly defined.");
-            return []; // Si grade n'est pas valide, retourne un tableau vide
+            return [];
         }
     } catch (error) {
         console.error("Error fetching user permissions:", error);
-        return []; // Retourne un tableau vide en cas d'erreur
+        return [];
     }
 }
 
@@ -82,32 +71,32 @@ async function fetchFolders() {
     try {
         const permissions = await fetchUserPermissions();
         if (!permissions.length) {
-            console.error("No permissions found.");
+            console.log("No permissions found.");
             return;
         }
 
-        // Si des permissions sont présentes, récupérez les dossiers
         const response = await fetch("https://pkyt-database-up.vercel.app/code-source/API/forum_perms/pkyt.json");
         const folders = await response.json();
+        console.log("Fetched folders:", folders);
 
         const accessibleFolders = folders.Dossier.filter(dossier => {
             const dossierPermissions = dossier.permissions ? dossier.permissions.split(',') : [];
-            // Filtre les dossiers en fonction des permissions
             return dossierPermissions.some(permission => permissions.includes(permission));
         });
 
-        // Afficher les dossiers accessibles dans le <select> de la popup
         const folderSelect = document.getElementById('folderSelect');
-        folderSelect.innerHTML = ''; // Réinitialise le contenu
-        accessibleFolders.forEach(folder => {
-            const option = document.createElement('option');
-            option.value = folder.name; // Ou l'attribut que vous voulez utiliser
-            option.textContent = folder.name;
-            folderSelect.appendChild(option);
-        });
+        folderSelect.innerHTML = '';
 
-        if (accessibleFolders.length === 0) {
-            console.log("No accessible folders.");
+        if (accessibleFolders.length > 0) {
+            accessibleFolders.forEach(folder => {
+                const option = document.createElement('option');
+                option.value = folder.name;
+                option.textContent = folder.name;
+                folderSelect.appendChild(option);
+            });
+            console.log("Accessible folders:", accessibleFolders);
+        } else {
+            console.log("No accessible folders found for the user's permissions.");
         }
     } catch (error) {
         console.error("Error fetching folders:", error);
@@ -131,15 +120,11 @@ function saveContent() {
     }
 
     const content = document.getElementById('editor').innerHTML;
-
-    // Enregistrez le contenu dans un fichier ici
     console.log("Saving content:", content, "in folder:", folder, "with file name:", fileName);
 
-    // Fermer la popup après enregistrement
     closeSavePopup();
 }
 
-// Appelez la fonction fetchFolders pour récupérer et afficher les dossiers
 fetchFolders();
     </script>
 </body>
