@@ -63,7 +63,7 @@
     </div>
 
     <!-- JavaScript Section -->
-    <script>
+<script>
         // Fonction pour formater le texte
         function formatText(command) {
             document.execCommand(command, false, null);
@@ -71,12 +71,12 @@
 
         // Fonction pour afficher le popup d'enregistrement
         function showSavePopup() {
-            document.getElementById("savePopup").classList.remove("hidden");
+            document.getElementById("savePopup").style.display = 'flex';
         }
 
         // Fonction pour fermer le popup d'enregistrement
         function closeSavePopup() {
-            document.getElementById("savePopup").classList.add("hidden");
+            document.getElementById("savePopup").style.display = 'none';
         }
 
         // Fonction pour enregistrer le contenu de l'éditeur
